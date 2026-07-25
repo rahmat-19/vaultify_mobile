@@ -24,14 +24,13 @@ class VaultState {
     String? query,
     VaultCategory? category,
     bool clearCategory = false,
-  }) =>
-      VaultState(
-        items: items ?? this.items,
-        loading: loading ?? this.loading,
-        message: message,
-        query: query ?? this.query,
-        category: clearCategory ? null : category ?? this.category,
-      );
+  }) => VaultState(
+    items: items ?? this.items,
+    loading: loading ?? this.loading,
+    message: message,
+    query: query ?? this.query,
+    category: clearCategory ? null : category ?? this.category,
+  );
 }
 
 class VaultController extends Notifier<VaultState> {
@@ -40,7 +39,12 @@ class VaultController extends Notifier<VaultState> {
     unawaited(Future<void>.microtask(load));
     return const VaultState(loading: true);
   }
-  Future<void> load({String? query, VaultCategory? category, bool clear = false}) async {
+
+  Future<void> load({
+    String? query,
+    VaultCategory? category,
+    bool clear = false,
+  }) async {
     final nextQuery = query ?? state.query;
     final nextCategory = clear ? null : category ?? state.category;
     state = state.copyWith(
@@ -50,15 +54,15 @@ class VaultController extends Notifier<VaultState> {
       clearCategory: clear,
     );
     try {
-      final items = await ref.read(vaultRepositoryProvider).getAll(
-            query: nextQuery,
-            category: nextCategory,
-          );
+      final items = await ref
+          .read(vaultRepositoryProvider)
+          .getAll(query: nextQuery, category: nextCategory);
       state = state.copyWith(items: items, loading: false);
     } on Failure catch (failure) {
       state = state.copyWith(loading: false, message: failure.message);
     }
   }
+
   Future<bool> save(VaultItemInput input, {String? id}) async {
     try {
       final repository = ref.read(vaultRepositoryProvider);
@@ -74,15 +78,19 @@ class VaultController extends Notifier<VaultState> {
       return false;
     }
   }
-  Future<void> delete(String id) async {
+
+  Future<bool> delete(String id) async {
     try {
       await ref.read(vaultRepositoryProvider).delete(id);
       await load();
+      return true;
     } on Failure catch (failure) {
       state = state.copyWith(message: failure.message);
+      return false;
     }
   }
 }
+
 final vaultControllerProvider = NotifierProvider<VaultController, VaultState>(
   VaultController.new,
 );

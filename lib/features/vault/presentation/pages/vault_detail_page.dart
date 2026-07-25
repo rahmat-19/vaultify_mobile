@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vaultify_mobile/app/providers.dart';
 import 'package:vaultify_mobile/core/security/screenshot_protection.dart';
+import 'package:vaultify_mobile/core/widgets/app_notifier.dart';
 import 'package:vaultify_mobile/core/widgets/app_widgets.dart';
 import 'package:vaultify_mobile/features/vault/domain/entities/vault_item.dart';
 import 'package:vaultify_mobile/features/vault/presentation/controllers/vault_controller.dart';
@@ -15,31 +16,42 @@ class VaultDetailPage extends ConsumerStatefulWidget {
   @override
   ConsumerState<VaultDetailPage> createState() => _VaultDetailPageState();
 }
+
 class _VaultDetailPageState extends ConsumerState<VaultDetailPage>
     with WidgetsBindingObserver {
   bool revealed = false;
   Timer? hideTimer;
   @override
-  void initState() { super.initState(); WidgetsBinding.instance.addObserver(this); }
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) {
       _hide();
     }
   }
+
   @override
   void dispose() {
-    hideTimer?.cancel(); WidgetsBinding.instance.removeObserver(this); super.dispose();
+    hideTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
+
   void _hide() {
     hideTimer?.cancel();
     if (mounted) setState(() => revealed = false);
   }
+
   Future<void> _reveal() async {
     try {
       final preferences = ref.read(sharedPreferencesProvider);
       final biometricEnabled = preferences.getBool('biometric_enabled') ?? true;
-      final ok = !biometricEnabled ||
+      final ok =
+          !biometricEnabled ||
           await ref.read(biometricServiceProvider).authenticate();
       if (!ok || !mounted) {
         return;
@@ -50,20 +62,35 @@ class _VaultDetailPageState extends ConsumerState<VaultDetailPage>
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.toString().replaceFirst('BiometricFailure: ', ''))),
+          SnackBar(
+            content: Text(
+              error.toString().replaceFirst('BiometricFailure: ', ''),
+            ),
+          ),
         );
       }
     }
   }
+
   @override
   Widget build(BuildContext context) => SecureScreen(
     child: Scaffold(
       appBar: AppBar(
         title: Text(widget.item.title),
         actions: <Widget>[
-          IconButton(icon: const Icon(Icons.edit), tooltip: 'Edit',
-            onPressed: () => context.push('/vault/${widget.item.id}/edit', extra: widget.item)),
-          IconButton(icon: const Icon(Icons.delete_outline), tooltip: 'Hapus', onPressed: _delete),
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: 'Edit',
+            onPressed: () => context.push(
+              '/vault/${widget.item.id}/edit',
+              extra: widget.item,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Hapus',
+            onPressed: _delete,
+          ),
         ],
       ),
       body: ListView(
@@ -71,9 +98,11 @@ class _VaultDetailPageState extends ConsumerState<VaultDetailPage>
         children: <Widget>[
           Chip(label: Text(widget.item.category.label)),
           _row('Username', widget.item.username, copy: widget.item.username),
-          _row('Kata sandi / rahasia',
+          _row(
+            'Kata sandi / rahasia',
             revealed ? widget.item.secret : '••••••••••••',
-            copy: revealed ? widget.item.secret : null),
+            copy: revealed ? widget.item.secret : null,
+          ),
           if (widget.item.notes.isNotEmpty)
             _row('Catatan aman', revealed ? widget.item.notes : '••••••••'),
           if (!revealed)
@@ -92,8 +121,11 @@ class _VaultDetailPageState extends ConsumerState<VaultDetailPage>
             TextButton.icon(
               onPressed: () {
                 final uri = Uri.tryParse(widget.item.website);
-                if (uri != null && (uri.scheme == 'https' || uri.scheme == 'http')) {
-                  unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
+                if (uri != null &&
+                    (uri.scheme == 'https' || uri.scheme == 'http')) {
+                  unawaited(
+                    launchUrl(uri, mode: LaunchMode.externalApplication),
+                  );
                 }
               },
               icon: const Icon(Icons.open_in_new),
@@ -107,23 +139,44 @@ class _VaultDetailPageState extends ConsumerState<VaultDetailPage>
     child: ListTile(
       title: Text(label),
       subtitle: Text(value, maxLines: revealed ? 8 : 1),
-      trailing: copy == null ? null : IconButton(
-        icon: const Icon(Icons.copy), tooltip: 'Salin',
-        onPressed: () async {
-          await ref.read(clipboardServiceProvider).copy(copy);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Disalin. Clipboard akan dibersihkan otomatis.')));
-          }
-        },
-      ),
+      trailing: copy == null
+          ? null
+          : IconButton(
+              icon: const Icon(Icons.copy),
+              tooltip: 'Salin',
+              onPressed: () async {
+                await ref.read(clipboardServiceProvider).copy(copy);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Disalin. Clipboard akan dibersihkan otomatis.',
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
     ),
   );
   Future<void> _delete() async {
-    final yes = await showConfirmationDialog(context,
-      title: 'Hapus item?', message: 'Tindakan ini tidak dapat dibatalkan.', action: 'Hapus');
+    final yes = await showConfirmationDialog(
+      context,
+      title: 'Hapus item?',
+      message: 'Tindakan ini tidak dapat dibatalkan.',
+      action: 'Hapus',
+    );
     if (!yes) return;
-    await ref.read(vaultControllerProvider.notifier).delete(widget.item.id);
-    if (mounted) context.go('/vault');
+    final ok = await ref
+        .read(vaultControllerProvider.notifier)
+        .delete(widget.item.id);
+    if (!mounted) return;
+    if (ok) {
+      AppNotifier.success('Item vault berhasil dihapus.');
+      context.go('/vault');
+    } else {
+      final message = ref.read(vaultControllerProvider).message;
+      AppNotifier.error(message ?? 'Item vault gagal dihapus.');
+    }
   }
 }

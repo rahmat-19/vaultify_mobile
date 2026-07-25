@@ -15,19 +15,27 @@ import 'package:vaultify_mobile/features/vault/presentation/pages/vault_detail_p
 import 'package:vaultify_mobile/features/vault/presentation/pages/vault_form_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authControllerProvider);
+  final authStatus = ref.watch(
+    authControllerProvider.select((state) => state.status),
+  );
   final onboarding = ref.watch(onboardingCompleteProvider);
   return GoRouter(
     initialLocation: '/splash',
     redirect: (context, state) {
       final path = state.matchedLocation;
-      if (auth.status == AuthStatus.checking) {
+      if (authStatus == AuthStatus.checking) {
         return path == '/splash' ? null : '/splash';
       }
-      if (!onboarding && path != '/onboarding') return '/onboarding';
-      final public = path == '/login' || path == '/register' || path == '/onboarding';
-      if (auth.status == AuthStatus.unauthenticated && !public) return '/login';
-      if (auth.status == AuthStatus.authenticated && (public || path == '/splash')) {
+      if (!onboarding) {
+        return path == '/onboarding' ? null : '/onboarding';
+      }
+      if (path == '/onboarding') {
+        return authStatus == AuthStatus.authenticated ? '/vault' : '/login';
+      }
+      final public = path == '/login' || path == '/register';
+      if (authStatus == AuthStatus.unauthenticated && !public) return '/login';
+      if (authStatus == AuthStatus.authenticated &&
+          (public || path == '/splash')) {
         return '/vault';
       }
       return null;
@@ -51,8 +59,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/vault/:id/edit',
         builder: (_, state) => VaultFormPage(item: state.extra as VaultItem?),
       ),
-      GoRoute(path: '/generator', builder: (_, _) => const PasswordGeneratorPage()),
-      GoRoute(path: '/settings', builder: (_, _) => const SecuritySettingsPage()),
+      GoRoute(
+        path: '/generator',
+        builder: (_, _) => const PasswordGeneratorPage(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (_, _) => const SecuritySettingsPage(),
+      ),
       GoRoute(path: '/privacy', builder: (_, _) => const PrivacyPage()),
     ],
   );

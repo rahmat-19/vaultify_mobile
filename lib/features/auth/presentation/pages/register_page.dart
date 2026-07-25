@@ -6,6 +6,7 @@ import 'package:vaultify_mobile/core/widgets/app_widgets.dart';
 import 'package:vaultify_mobile/core/widgets/app_notifier.dart';
 import 'package:vaultify_mobile/features/auth/domain/usecases/password_validator.dart';
 import 'package:vaultify_mobile/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:vaultify_mobile/features/auth/presentation/widgets/auth_loading_overlay.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -31,85 +32,98 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(authControllerProvider);
-    return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.register)),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: Form(
-              key: key,
-              child: Column(
-                children: <Widget>[
-                  AppTextField(
-                    controller: name,
-                    label: AppStrings.fullName,
-                    validator: (v) => (v?.trim().length ?? 0) >= 2
-                        ? null
-                        : 'Nama wajib diisi.',
+    return PopScope(
+      canPop: !state.loading,
+      child: Stack(
+        children: <Widget>[
+          Scaffold(
+            appBar: AppBar(title: const Text(AppStrings.register)),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  child: Form(
+                    key: key,
+                    child: Column(
+                      children: <Widget>[
+                        AppTextField(
+                          controller: name,
+                          label: AppStrings.fullName,
+                          validator: (v) => (v?.trim().length ?? 0) >= 2
+                              ? null
+                              : 'Nama wajib diisi.',
+                        ),
+                        const SizedBox(height: 12),
+                        AppTextField(
+                          controller: email,
+                          label: AppStrings.email,
+                          validator: (v) => v?.contains('@') == true
+                              ? null
+                              : 'Email tidak valid.',
+                        ),
+                        const SizedBox(height: 12),
+                        PasswordTextField(
+                          controller: password,
+                          validator: (v) => PasswordValidator.isStrong(v ?? '')
+                              ? null
+                              : 'Kata sandi belum memenuhi persyaratan.',
+                        ),
+                        const SizedBox(height: 8),
+                        const _Requirements(),
+                        const SizedBox(height: 12),
+                        PasswordTextField(
+                          controller: confirmation,
+                          label: AppStrings.confirmPassword,
+                          validator: (v) => v == password.text
+                              ? null
+                              : 'Konfirmasi tidak sama.',
+                        ),
+                        const SizedBox(height: 20),
+                        PrimaryButton(
+                          label: AppStrings.register,
+                          loading: state.loading,
+                          onPressed: () async {
+                            if (key.currentState?.validate() != true) return;
+                            final ok = await ref
+                                .read(authControllerProvider.notifier)
+                                .register(
+                                  name: name.text,
+                                  email: email.text,
+                                  password: password.text,
+                                  confirmation: confirmation.text,
+                                );
+                            if (ok) {
+                              AppNotifier.success('Pendaftaran berhasil.');
+                            }
+                            if (!ok && context.mounted) {
+                              final message = ref
+                                  .read(authControllerProvider)
+                                  .message;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    message ?? AppStrings.genericError,
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                        TextButton(
+                          onPressed: () => context.go('/login'),
+                          child: const Text('Sudah punya akun? Masuk'),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    controller: email,
-                    label: AppStrings.email,
-                    validator: (v) =>
-                        v?.contains('@') == true ? null : 'Email tidak valid.',
-                  ),
-                  const SizedBox(height: 12),
-                  PasswordTextField(
-                    controller: password,
-                    validator: (v) => PasswordValidator.isStrong(v ?? '')
-                        ? null
-                        : 'Kata sandi belum memenuhi persyaratan.',
-                  ),
-                  const SizedBox(height: 8),
-                  const _Requirements(),
-                  const SizedBox(height: 12),
-                  PasswordTextField(
-                    controller: confirmation,
-                    label: AppStrings.confirmPassword,
-                    validator: (v) =>
-                        v == password.text ? null : 'Konfirmasi tidak sama.',
-                  ),
-                  const SizedBox(height: 20),
-                  PrimaryButton(
-                    label: AppStrings.register,
-                    loading: state.loading,
-                    onPressed: () async {
-                      if (key.currentState?.validate() != true) return;
-                      final ok = await ref
-                          .read(authControllerProvider.notifier)
-                          .register(
-                            name: name.text,
-                            email: email.text,
-                            password: password.text,
-                            confirmation: confirmation.text,
-                          );
-                      if (ok) {
-                        AppNotifier.success('Pendaftaran berhasil.');
-                      }
-                      if (!ok && context.mounted) {
-                        final message = ref
-                            .read(authControllerProvider)
-                            .message;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(message ?? AppStrings.genericError),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  TextButton(
-                    onPressed: () => context.go('/login'),
-                    child: const Text('Sudah punya akun? Masuk'),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+          if (state.loading)
+            const AuthLoadingOverlay(message: 'Membuat akun...'),
+        ],
       ),
     );
   }

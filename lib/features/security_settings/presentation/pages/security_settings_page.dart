@@ -10,8 +10,10 @@ import 'package:vaultify_mobile/features/auth/presentation/controllers/auth_cont
 class SecuritySettingsPage extends ConsumerStatefulWidget {
   const SecuritySettingsPage({super.key});
   @override
-  ConsumerState<SecuritySettingsPage> createState() => _SecuritySettingsPageState();
+  ConsumerState<SecuritySettingsPage> createState() =>
+      _SecuritySettingsPageState();
 }
+
 class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
   late bool biometric;
   late bool autoHide;
@@ -26,12 +28,18 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
     timeout = prefs.getInt('session_timeout') ?? 120;
     clipboard = prefs.getInt('clipboard_delay') ?? 30;
   }
+
   Future<bool> _authorize() async {
     if (!biometric) return true;
-    try { return await ref.read(biometricServiceProvider).authenticate(
-      reason: 'Verifikasi perubahan pengaturan keamanan'); }
-    catch (_) { return false; }
+    try {
+      return await ref
+          .read(biometricServiceProvider)
+          .authenticate(reason: 'Verifikasi perubahan pengaturan keamanan');
+    } catch (_) {
+      return false;
+    }
   }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text(AppStrings.settings)),
@@ -40,11 +48,15 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
         SwitchListTile(
           secondary: const Icon(Icons.fingerprint),
           title: const Text('Aktifkan perlindungan biometrik'),
-          subtitle: const Text('Melindungi pengungkapan rahasia, bukan autentikasi backend.'),
+          subtitle: const Text(
+            'Melindungi pengungkapan rahasia, bukan autentikasi backend.',
+          ),
           value: biometric,
           onChanged: (value) async {
             if (!await _authorize()) return;
-            await ref.read(sharedPreferencesProvider).setBool('biometric_enabled', value);
+            await ref
+                .read(sharedPreferencesProvider)
+                .setBool('biometric_enabled', value);
             setState(() => biometric = value);
           },
         ),
@@ -62,8 +74,12 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
             ],
             onChanged: (value) async {
               if (value == null || !await _authorize()) return;
-              await ref.read(sharedPreferencesProvider).setInt('session_timeout', value);
-              ref.read(sessionManagerProvider).updateTimeout(Duration(seconds: value));
+              await ref
+                  .read(sharedPreferencesProvider)
+                  .setInt('session_timeout', value);
+              ref
+                  .read(sessionManagerProvider)
+                  .updateTimeout(Duration(seconds: value));
               setState(() => timeout = value);
             },
           ),
@@ -74,7 +90,9 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
           value: autoHide,
           onChanged: (value) async {
             if (!await _authorize()) return;
-            await ref.read(sharedPreferencesProvider).setBool('auto_hide', value);
+            await ref
+                .read(sharedPreferencesProvider)
+                .setBool('auto_hide', value);
             setState(() => autoHide = value);
           },
         ),
@@ -92,9 +110,12 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
         ListTile(
           leading: const Icon(Icons.cleaning_services),
           title: const Text('Bersihkan cache lokal'),
-          subtitle: const Text('Tidak ada cache rahasia plaintext yang disimpan.'),
+          subtitle: const Text(
+            'Tidak ada cache rahasia plaintext yang disimpan.',
+          ),
           onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cache lokal telah dibersihkan.'))),
+            const SnackBar(content: Text('Cache lokal telah dibersihkan.')),
+          ),
         ),
         ListTile(
           leading: const Icon(Icons.privacy_tip),
@@ -107,9 +128,11 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
           onTap: () async {
             final info = await PackageInfo.fromPlatform();
             if (context.mounted) {
-              showAboutDialog(context: context,
+              showAboutDialog(
+                context: context,
                 applicationName: AppStrings.appName,
-                applicationVersion: '${info.version}+${info.buildNumber}');
+                applicationVersion: '${info.version}+${info.buildNumber}',
+              );
             }
           },
         ),
@@ -118,9 +141,12 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
           title: const Text('Hapus data aplikasi lokal'),
           onTap: () async {
             if (!await _authorize() || !context.mounted) return;
-            final yes = await showConfirmationDialog(context,
-              title: 'Hapus data lokal?', message: 'Sesi dan preferensi lokal akan dihapus.',
-              action: 'Hapus');
+            final yes = await showConfirmationDialog(
+              context,
+              title: 'Hapus data lokal?',
+              message: 'Sesi dan preferensi lokal akan dihapus.',
+              action: 'Hapus',
+            );
             if (!yes) return;
             await ref.read(secureStorageProvider).clearSession();
             await ref.read(sharedPreferencesProvider).clear();
@@ -131,8 +157,7 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
           leading: const Icon(Icons.logout),
           title: const Text(AppStrings.logout),
           onTap: () async {
-            final yes = await showConfirmationDialog(context,
-              title: 'Keluar?', message: 'Sesi lokal akan dihapus.', action: 'Keluar');
+            final yes = await showLogoutDialog(context);
             if (yes) {
               await ref.read(authControllerProvider.notifier).logout();
             }

@@ -34,6 +34,8 @@ class AuthState {
 }
 
 class AuthController extends Notifier<AuthState> {
+  static const _minimumLoadingDuration = Duration(milliseconds: 700);
+
   @override
   AuthState build() {
     ref.listen<int>(sessionInvalidationProvider, (_, _) => invalidateSession());
@@ -64,14 +66,17 @@ class AuthController extends Notifier<AuthState> {
 
   Future<bool> login(String email, String password) async {
     state = state.copyWith(loading: true, clearMessage: true);
+    final minimumLoading = Future<void>.delayed(_minimumLoadingDuration);
     try {
       final session = await LoginUseCase(ref.read(authRepositoryProvider))(
         email,
         password,
       );
+      await minimumLoading;
       state = AuthState(status: AuthStatus.authenticated, user: session.user);
       return true;
     } on Failure catch (failure) {
+      await minimumLoading;
       state = state.copyWith(loading: false, message: failure.message);
       return false;
     }
@@ -84,6 +89,7 @@ class AuthController extends Notifier<AuthState> {
     required String confirmation,
   }) async {
     state = state.copyWith(loading: true, clearMessage: true);
+    final minimumLoading = Future<void>.delayed(_minimumLoadingDuration);
     try {
       final session = await RegisterUseCase(ref.read(authRepositoryProvider))(
         fullName: name,
@@ -91,9 +97,11 @@ class AuthController extends Notifier<AuthState> {
         password: password,
         confirmation: confirmation,
       );
+      await minimumLoading;
       state = AuthState(status: AuthStatus.authenticated, user: session.user);
       return true;
     } on Failure catch (failure) {
+      await minimumLoading;
       state = state.copyWith(loading: false, message: failure.message);
       return false;
     }
@@ -103,7 +111,14 @@ class AuthController extends Notifier<AuthState> {
     state = state.copyWith(loading: true);
     await ref.read(authRepositoryProvider).logout();
     ref.read(sessionManagerProvider).lockSensitiveAccess();
-    state = const AuthState(status: AuthStatus.unauthenticated);
+    state = const AuthState(
+      status: AuthStatus.unauthenticated,
+      message: 'Logout berhasil.',
+    );
+  }
+
+  void clearMessage() {
+    state = state.copyWith(clearMessage: true);
   }
 
   void invalidateSession() {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,7 @@ import 'package:vaultify_mobile/core/constants/app_strings.dart';
 import 'package:vaultify_mobile/core/widgets/app_notifier.dart';
 import 'package:vaultify_mobile/core/widgets/app_widgets.dart';
 import 'package:vaultify_mobile/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:vaultify_mobile/features/auth/presentation/widgets/auth_loading_overlay.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -16,6 +19,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final formKey = GlobalKey<FormState>();
   final email = TextEditingController();
   final password = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final controller = ref.read(authControllerProvider.notifier);
+      final message = ref.read(authControllerProvider).message;
+      if (message == 'Logout berhasil.') {
+        controller.clearMessage();
+        unawaited(showLogoutSuccessDialog(context));
+      }
+    });
+  }
+
   @override
   void dispose() {
     email.dispose();
@@ -33,73 +51,86 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         ).showSnackBar(SnackBar(content: Text(next.message!)));
       }
     });
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Icon(
-                      Icons.shield,
-                      size: 72,
-                      color: Theme.of(context).colorScheme.primary,
+    return PopScope(
+      canPop: !state.loading,
+      child: Stack(
+        children: <Widget>[
+          Scaffold(
+            body: SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          Icon(
+                            Icons.shield,
+                            size: 72,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            AppStrings.appName,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          ),
+                          const Text(
+                            AppStrings.appTagline,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 32),
+                          AppTextField(
+                            controller: email,
+                            label: AppStrings.email,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) => value?.contains('@') == true
+                                ? null
+                                : 'Masukkan email yang valid.',
+                          ),
+                          const SizedBox(height: 14),
+                          PasswordTextField(
+                            controller: password,
+                            validator: (value) => value?.isNotEmpty == true
+                                ? null
+                                : 'Kata sandi wajib diisi.',
+                          ),
+                          const SizedBox(height: 20),
+                          PrimaryButton(
+                            label: AppStrings.login,
+                            loading: state.loading,
+                            onPressed: () async {
+                              if (formKey.currentState?.validate() != true) {
+                                return;
+                              }
+                              final ok = await ref
+                                  .read(authControllerProvider.notifier)
+                                  .login(email.text, password.text);
+                              if (ok) {
+                                AppNotifier.success('Login berhasil.');
+                              }
+                            },
+                          ),
+                          TextButton(
+                            onPressed: state.loading
+                                ? null
+                                : () => context.go('/register'),
+                            child: const Text('Belum punya akun? Daftar'),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      AppStrings.appName,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    const Text(
-                      AppStrings.appTagline,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
-                    AppTextField(
-                      controller: email,
-                      label: AppStrings.email,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) => value?.contains('@') == true
-                          ? null
-                          : 'Masukkan email yang valid.',
-                    ),
-                    const SizedBox(height: 14),
-                    PasswordTextField(
-                      controller: password,
-                      validator: (value) => value?.isNotEmpty == true
-                          ? null
-                          : 'Kata sandi wajib diisi.',
-                    ),
-                    const SizedBox(height: 20),
-                    PrimaryButton(
-                      label: AppStrings.login,
-                      loading: state.loading,
-                      onPressed: () async {
-                        if (formKey.currentState?.validate() != true) return;
-                        final ok = await ref
-                            .read(authControllerProvider.notifier)
-                            .login(email.text, password.text);
-                        if (ok) AppNotifier.success('Login berhasil.');
-                      },
-                    ),
-                    TextButton(
-                      onPressed: state.loading
-                          ? null
-                          : () => context.go('/register'),
-                      child: const Text('Belum punya akun? Daftar'),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+          if (state.loading)
+            const AuthLoadingOverlay(message: 'Memverifikasi...'),
+        ],
       ),
     );
   }

@@ -21,13 +21,13 @@ class AppTextField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   @override
   Widget build(BuildContext context) => TextFormField(
-        controller: controller,
-        decoration: InputDecoration(labelText: label),
-        validator: validator,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        onChanged: onChanged,
-      );
+    controller: controller,
+    decoration: InputDecoration(labelText: label),
+    validator: validator,
+    keyboardType: keyboardType,
+    maxLines: maxLines,
+    onChanged: onChanged,
+  );
 }
 
 class PasswordTextField extends StatefulWidget {
@@ -43,24 +43,25 @@ class PasswordTextField extends StatefulWidget {
   @override
   State<PasswordTextField> createState() => _PasswordTextFieldState();
 }
+
 class _PasswordTextFieldState extends State<PasswordTextField> {
   bool hidden = true;
   @override
   Widget build(BuildContext context) => TextFormField(
-        controller: widget.controller,
-        obscureText: hidden,
-        enableSuggestions: false,
-        autocorrect: false,
-        validator: widget.validator,
-        decoration: InputDecoration(
-          labelText: widget.label,
-          suffixIcon: IconButton(
-            tooltip: hidden ? 'Tampilkan kata sandi' : 'Sembunyikan kata sandi',
-            onPressed: () => setState(() => hidden = !hidden),
-            icon: Icon(hidden ? Icons.visibility : Icons.visibility_off),
-          ),
-        ),
-      );
+    controller: widget.controller,
+    obscureText: hidden,
+    enableSuggestions: false,
+    autocorrect: false,
+    validator: widget.validator,
+    decoration: InputDecoration(
+      labelText: widget.label,
+      suffixIcon: IconButton(
+        tooltip: hidden ? 'Tampilkan kata sandi' : 'Sembunyikan kata sandi',
+        onPressed: () => setState(() => hidden = !hidden),
+        icon: Icon(hidden ? Icons.visibility : Icons.visibility_off),
+      ),
+    ),
+  );
 }
 
 class PrimaryButton extends StatelessWidget {
@@ -75,17 +76,17 @@ class PrimaryButton extends StatelessWidget {
   final bool loading;
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: double.infinity,
-        child: FilledButton(
-          onPressed: loading ? null : onPressed,
-          child: loading
-              ? const SizedBox.square(
-                  dimension: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(label),
-        ),
-      );
+    width: double.infinity,
+    child: FilledButton(
+      onPressed: loading ? null : onPressed,
+      child: loading
+          ? const SizedBox.square(
+              dimension: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Text(label),
+    ),
+  );
 }
 
 class ErrorView extends StatelessWidget {
@@ -94,32 +95,32 @@ class ErrorView extends StatelessWidget {
   final VoidCallback onRetry;
   @override
   Widget build(BuildContext context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const Icon(Icons.cloud_off, size: 48),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
-            TextButton(onPressed: onRetry, child: const Text(AppStrings.retry)),
-          ],
-        ),
-      );
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        const Icon(Icons.cloud_off, size: 48),
+        const SizedBox(height: 12),
+        Text(message, textAlign: TextAlign.center),
+        TextButton(onPressed: onRetry, child: const Text(AppStrings.retry)),
+      ],
+    ),
+  );
 }
 
 class EmptyVaultView extends StatelessWidget {
   const EmptyVaultView({super.key});
   @override
   Widget build(BuildContext context) => const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(Icons.lock_outline, size: 64),
-            SizedBox(height: 12),
-            Text(AppStrings.noItems),
-            Text('Tambahkan kredensial dummy pertama Anda.'),
-          ],
-        ),
-      );
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(Icons.lock_outline, size: 64),
+        SizedBox(height: 12),
+        Text(AppStrings.noItems),
+        Text('Tambahkan kredensial dummy pertama Anda.'),
+      ],
+    ),
+  );
 }
 
 class VaultItemCard extends StatelessWidget {
@@ -128,26 +129,26 @@ class VaultItemCard extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) => Card(
-        child: ListTile(
-          onTap: onTap,
-          leading: CircleAvatar(child: Icon(_icon(item.category))),
-          title: Text(item.title),
-          subtitle: Text(
-            '${item.username.isEmpty ? '••••••' : item.username} · '
-            '${DateFormat.yMMMd('id').format(item.updatedAt)}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          trailing: Chip(label: Text(item.category.label)),
-        ),
-      );
+    child: ListTile(
+      onTap: onTap,
+      leading: CircleAvatar(child: Icon(_icon(item.category))),
+      title: Text(item.title),
+      subtitle: Text(
+        '${item.username.isEmpty ? '••••••' : item.username} · '
+        '${DateFormat.yMMMd('id').format(item.updatedAt)}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Chip(label: Text(item.category.label)),
+    ),
+  );
   IconData _icon(VaultCategory category) => switch (category) {
-        VaultCategory.login => Icons.login,
-        VaultCategory.apiKey => Icons.key,
-        VaultCategory.pin => Icons.pin,
-        VaultCategory.secureNote => Icons.note,
-        VaultCategory.other => Icons.shield,
-      };
+    VaultCategory.login => Icons.login,
+    VaultCategory.apiKey => Icons.key,
+    VaultCategory.pin => Icons.pin,
+    VaultCategory.secureNote => Icons.note,
+    VaultCategory.other => Icons.shield,
+  };
 }
 
 Future<bool> showConfirmationDialog(
@@ -174,3 +175,101 @@ Future<bool> showConfirmationDialog(
       ),
     ) ??
     false;
+
+Future<bool> showLogoutDialog(BuildContext context) async =>
+    await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 380),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Icon(Icons.logout_rounded, color: Colors.red, size: 48),
+                const SizedBox(height: 14),
+                Text(
+                  'Keluar dari akun?',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Anda akan keluar dari aplikasi dan harus login kembali '
+                  'untuk mengakses data Anda.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text(AppStrings.cancel),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text(AppStrings.logout),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ) ??
+    false;
+
+Future<void> showLogoutSuccessDialog(BuildContext context) => showDialog<void>(
+  context: context,
+  barrierDismissible: false,
+  builder: (context) => Dialog(
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 360),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const CircleAvatar(
+              radius: 30,
+              backgroundColor: Color(0xFFE8F5E9),
+              child: Icon(Icons.check_rounded, color: Colors.green, size: 38),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Logout berhasil',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Sesi Anda telah berakhir dengan aman. '
+              'Silakan login kembali untuk mengakses data.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
+);
