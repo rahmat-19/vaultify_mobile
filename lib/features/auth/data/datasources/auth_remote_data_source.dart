@@ -16,11 +16,24 @@ class AuthRemoteDataSource {
     String fullName,
     String email,
     String password,
-  ) => _authenticate('/auth/register', <String, String>{
-    'fullname': fullName,
-    'email': email,
-    'password': password,
-  });
+  ) async {
+    final response = await dio.post<Map<String, dynamic>>(
+      '/auth/register',
+      data: <String, String>{
+        'fullname': fullName,
+        'email': email,
+        'password': password,
+      },
+    );
+    final envelope = ApiResponse<Map<String, dynamic>>.fromJson(
+      response.data ?? const <String, dynamic>{},
+      (json) => json! as Map<String, dynamic>,
+    );
+    if (!envelope.success || envelope.data == null) {
+      throw const FormatException();
+    }
+    return login(email, password);
+  }
 
   Future<AuthSession> _authenticate(
     String path,
@@ -64,5 +77,8 @@ class AuthRemoteDataSource {
     return UserModel.fromJson(data);
   }
 
-  Future<void> logout() => dio.post<void>('/auth/logout');
+  Future<void> logout(String refreshToken) => dio.post<void>(
+    '/auth/logout',
+    data: <String, String>{'refresh_token': refreshToken},
+  );
 }

@@ -5,12 +5,14 @@ import 'package:vaultify_mobile/app/router.dart';
 import 'package:vaultify_mobile/app/theme.dart';
 import 'package:vaultify_mobile/core/constants/app_strings.dart';
 import 'package:vaultify_mobile/core/security/session_manager.dart';
+import 'package:vaultify_mobile/core/widgets/app_notifier.dart';
 
 class VaultifyApp extends ConsumerStatefulWidget {
   const VaultifyApp({super.key});
   @override
   ConsumerState<VaultifyApp> createState() => _VaultifyAppState();
 }
+
 class _VaultifyAppState extends ConsumerState<VaultifyApp> {
   AppLifecycleObserver? observer;
   @override
@@ -21,17 +23,20 @@ class _VaultifyAppState extends ConsumerState<VaultifyApp> {
     );
     WidgetsBinding.instance.addObserver(observer!);
   }
+
   @override
   void dispose() {
     if (observer != null) WidgetsBinding.instance.removeObserver(observer!);
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     return Listener(
       onPointerDown: (_) => ref.read(sessionManagerProvider).recordActivity(),
       child: MaterialApp.router(
+        scaffoldMessengerKey: AppNotifier.messengerKey,
         title: AppStrings.appName,
         debugShowCheckedModeBanner: false,
         theme: VaultifyTheme.light(),

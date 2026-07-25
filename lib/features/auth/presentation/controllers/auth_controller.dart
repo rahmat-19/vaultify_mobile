@@ -25,13 +25,12 @@ class AuthState {
     bool? loading,
     String? message,
     bool clearMessage = false,
-  }) =>
-      AuthState(
-        status: status ?? this.status,
-        user: user ?? this.user,
-        loading: loading ?? this.loading,
-        message: clearMessage ? null : message ?? this.message,
-      );
+  }) => AuthState(
+    status: status ?? this.status,
+    user: user ?? this.user,
+    loading: loading ?? this.loading,
+    message: clearMessage ? null : message ?? this.message,
+  );
 }
 
 class AuthController extends Notifier<AuthState> {
@@ -43,10 +42,16 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> restore() async {
+    const holdSplash = bool.fromEnvironment('HOLD_SPLASH');
+    if (holdSplash) {
+      await Future<void>.delayed(const Duration(seconds: 10));
+    }
     try {
       final user = await ref.read(authRepositoryProvider).restoreSession();
       state = AuthState(
-        status: user == null ? AuthStatus.unauthenticated : AuthStatus.authenticated,
+        status: user == null
+            ? AuthStatus.unauthenticated
+            : AuthStatus.authenticated,
         user: user,
       );
     } catch (_) {

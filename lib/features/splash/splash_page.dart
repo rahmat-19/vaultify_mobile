@@ -11,6 +11,7 @@ class SplashPage extends StatelessWidget {
         SizedBox(height: 16),
         Text(AppStrings.appName, style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
         Text(AppStrings.appTagline),
+        Text("RAHMAT HIDAYAT | 1002240019 | Teknologi Informasi"),
         SizedBox(height: 24),
         CircularProgressIndicator(),
       ]),

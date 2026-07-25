@@ -11,15 +11,16 @@ class AuthRepositoryImpl implements AuthRepository {
   final SecureStorageService storage;
 
   @override
-  Future<AuthSession> login({required String email, required String password}) =>
-      _guard(() => remote.login(email, password));
+  Future<AuthSession> login({
+    required String email,
+    required String password,
+  }) => _guard(() => remote.login(email, password));
   @override
   Future<AuthSession> register({
     required String fullName,
     required String email,
     required String password,
-  }) =>
-      _guard(() => remote.register(fullName, email, password));
+  }) => _guard(() => remote.register(fullName, email, password));
 
   Future<AuthSession> _guard(Future<AuthSession> Function() action) async {
     try {
@@ -46,7 +47,10 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> logout() async {
     try {
-      await remote.logout();
+      final refreshToken = await storage.readRefreshToken();
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await remote.logout(refreshToken);
+      }
     } catch (_) {
       // Local logout must succeed even when the backend is unavailable.
     } finally {
